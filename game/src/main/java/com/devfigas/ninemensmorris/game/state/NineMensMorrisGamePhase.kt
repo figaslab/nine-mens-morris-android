@@ -1,6 +1,6 @@
-package com.devfigas.dotsandboxes.game.state
+package com.devfigas.ninemensmorris.game.state
 
-enum class DotsAndBoxesGamePhase {
+enum class NineMensMorrisGamePhase {
     WAITING_CHALLENGE,
     CHALLENGE_RECEIVED,
     PLAYING,

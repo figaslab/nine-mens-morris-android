@@ -1,4 +1,4 @@
-package com.devfigas.dotsandboxes
+package com.devfigas.ninemensmorris
 
 import android.os.Bundle
 import android.os.Handler
@@ -14,16 +14,15 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import com.devfigas.dotsandboxes.game.ai.DotsAndBoxesAIEngine
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesLine
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesMove
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesRules
-import com.devfigas.dotsandboxes.game.engine.PlayerColor
-import com.devfigas.dotsandboxes.game.manager.DotsAndBoxesGameManager
-import com.devfigas.dotsandboxes.game.state.DotsAndBoxesGamePhase
-import com.devfigas.dotsandboxes.game.state.DotsAndBoxesGameResult
-import com.devfigas.dotsandboxes.game.state.DotsAndBoxesGameState
-import com.devfigas.dotsandboxes.ui.DotsAndBoxesBoardView
+import com.devfigas.ninemensmorris.game.ai.NineMensMorrisAIEngine
+import com.devfigas.ninemensmorris.game.engine.NineMensMorrisMove
+import com.devfigas.ninemensmorris.game.engine.NineMensMorrisRules
+import com.devfigas.ninemensmorris.game.engine.PlayerColor
+import com.devfigas.ninemensmorris.game.manager.NineMensMorrisGameManager
+import com.devfigas.ninemensmorris.game.state.NineMensMorrisGamePhase
+import com.devfigas.ninemensmorris.game.state.NineMensMorrisGameResult
+import com.devfigas.ninemensmorris.game.state.NineMensMorrisGameState
+import com.devfigas.ninemensmorris.ui.NineMensMorrisBoardView
 import com.devfigas.gridgame.model.PlayerSide
 import com.devfigas.mockpvp.PvpGameFactoryRegistry
 import com.devfigas.mockpvp.activity.GameModeActivity
@@ -47,10 +46,10 @@ import com.devfigas.mockpvp.ui.WaitingRematchDialog
 import ui.devfigas.uikit.customviews.RightDialogLayout
 import kotlin.random.Random
 
-class DotsAndBoxesGameActivity : AppCompatActivity() {
+class NineMensMorrisGameActivity : AppCompatActivity() {
 
     companion object {
-        private const val TAG = "DotsAndBoxesActivity"
+        private const val TAG = "NineMensMorrisActivity"
         const val EXTRA_MY_COLOR = "extra_my_color"
         const val EXTRA_OPPONENT = "extra_opponent"
         const val EXTRA_GAME_ID = "extra_game_id"
@@ -63,9 +62,11 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
     private lateinit var btnResign: TextView
     private lateinit var btnChat: ImageView
     private lateinit var tvGameStatus: TextView
-    private lateinit var tvRedScore: TextView
-    private lateinit var tvBlueScore: TextView
-    private lateinit var boardView: DotsAndBoxesBoardView
+    private lateinit var tvTempMessage: TextView
+    private lateinit var boardView: NineMensMorrisBoardView
+    private lateinit var piecesInHandContainer: View
+    private lateinit var tvRedInHand: TextView
+    private lateinit var tvBlueInHand: TextView
     private lateinit var opponentTimerContainer: View
     private lateinit var tvOpponentTimer: TextView
     private lateinit var myTimerContainer: View
@@ -79,7 +80,7 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
     private lateinit var snackbarContainer: CoordinatorLayout
 
     // Game state
-    private var gameManager: DotsAndBoxesGameManager? = null
+    private var gameManager: NineMensMorrisGameManager? = null
     private var gameMode: GameMode = GameMode.CPU
     private var myColor: PlayerColor = PlayerColor.RED
     private var currentUser: User? = null
@@ -102,6 +103,12 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
     private val chatHandler = Handler(Looper.getMainLooper())
     private var chatDismissRunnable: Runnable? = null
 
+    // Temp message
+    private val tempMessageHandler = Handler(Looper.getMainLooper())
+
+    // Phase tracking for pieces-in-hand fade
+    private var wasPlacingPhase = true
+
     // Flags
     private var isGameStarted = false
     private var isActivityDestroyed = false
@@ -113,7 +120,7 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_dots_and_boxes_game)
+        setContentView(R.layout.activity_nine_mens_morris_game)
 
         parseIntentExtras()
         bindViews()
@@ -122,7 +129,7 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         setupChatVisibility()
         setupTimerVisibility()
 
-        AnalyticsManager.logScreenView("DotsAndBoxesGame")
+        AnalyticsManager.logScreenView("NineMensMorrisGame")
 
         showVersusAnimation {
             startGame()
@@ -166,9 +173,11 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         btnResign = findViewById(R.id.btn_resign)
         btnChat = findViewById(R.id.btn_chat)
         tvGameStatus = findViewById(R.id.tv_game_status)
-        tvRedScore = findViewById(R.id.tv_red_score)
-        tvBlueScore = findViewById(R.id.tv_blue_score)
-        boardView = findViewById(R.id.dots_and_boxes_board_view)
+        tvTempMessage = findViewById(R.id.tv_temp_message)
+        boardView = findViewById(R.id.nine_mens_morris_board_view)
+        piecesInHandContainer = findViewById(R.id.pieces_in_hand_container)
+        tvRedInHand = findViewById(R.id.tv_red_in_hand)
+        tvBlueInHand = findViewById(R.id.tv_blue_in_hand)
         opponentTimerContainer = findViewById(R.id.opponent_timer_container)
         tvOpponentTimer = findViewById(R.id.tv_opponent_timer)
         myTimerContainer = findViewById(R.id.my_timer_container)
@@ -195,8 +204,8 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
             } else false
         }
 
-        boardView.setOnLineSelectedListener { line ->
-            selectLine(line)
+        boardView.setOnBoardActionListener { from, to ->
+            handleBoardAction(from, to)
         }
     }
 
@@ -246,13 +255,16 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         isGameStarted = true
         gameStartTime = System.currentTimeMillis()
         hasShownGameOver = false
+        wasPlacingPhase = true
+        piecesInHandContainer.alpha = 1f
+        piecesInHandContainer.visibility = View.VISIBLE
         btnResign.visibility = View.VISIBLE
         gameManager = createGameManager()
         AnalyticsManager.logGameStarted(gameMode, "unlimited", myColor.name)
         if (tournament != null) WalletManager.subtractCoins(this, tournament!!.fee)
     }
 
-    private fun createGameManager(): DotsAndBoxesGameManager {
+    private fun createGameManager(): NineMensMorrisGameManager {
         return when (gameMode) {
             GameMode.CPU -> createCpuGameManager()
             GameMode.LOCAL -> createLocalGameManager()
@@ -261,41 +273,41 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         }
     }
 
-    private fun createCpuGameManager(): DotsAndBoxesGameManager {
-        val ai = DotsAndBoxesAIEngine(level = 0)
+    private fun createCpuGameManager(): NineMensMorrisGameManager {
+        val ai = NineMensMorrisAIEngine(level = 0)
         val cpuColor = myColor
         val cpuOpponent = opponent
-        val manager = object : DotsAndBoxesGameManager(
+        val manager = object : NineMensMorrisGameManager(
             onStateChanged = { state -> runOnUiThread { onStateChanged(state) } },
             onError = { error -> runOnUiThread { onError(error) } }
         ) {
             override fun startGame(myColor: PlayerColor, opponent: User?) {
-                val state = DotsAndBoxesGameState.createNew(GameMode.CPU, myColor, opponent)
+                val state = NineMensMorrisGameState.createNew(GameMode.CPU, myColor, opponent)
                 updateState(state)
                 if (myColor != PlayerColor.RED) scheduleAiMove(state)
             }
 
             override fun resign() {
                 val state = currentState ?: return
-                val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+                val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
                 updateState(state.copy(
-                    phase = DotsAndBoxesGamePhase.GAME_OVER,
-                    result = DotsAndBoxesGameResult(state.myColor.opposite(), DotsAndBoxesGameResult.Reason.RESIGNATION, redScore, blueScore)
+                    phase = NineMensMorrisGamePhase.GAME_OVER,
+                    result = NineMensMorrisGameResult(state.myColor.opposite(), NineMensMorrisGameResult.Reason.RESIGNATION, redPieces, bluePieces)
                 ))
             }
 
-            override fun onMoveApplied(move: DotsAndBoxesMove, newState: DotsAndBoxesGameState, extraTurn: Boolean) {
-                if (newState.phase == DotsAndBoxesGamePhase.PLAYING && newState.currentTurn != newState.myColor) {
+            override fun onMoveApplied(move: NineMensMorrisMove, newState: NineMensMorrisGameState, mustRemove: Boolean) {
+                if (newState.phase == NineMensMorrisGamePhase.PLAYING && newState.currentTurn != newState.myColor) {
                     scheduleAiMove(newState)
                 }
             }
 
-            fun scheduleAiMove(state: DotsAndBoxesGameState) {
+            fun scheduleAiMove(state: NineMensMorrisGameState) {
                 val delay = 300L + Random.nextLong(500)
                 aiHandler.postDelayed({
                     if (isActivityDestroyed) return@postDelayed
                     val cs = this.getState() ?: return@postDelayed
-                    if (cs.phase != DotsAndBoxesGamePhase.PLAYING) return@postDelayed
+                    if (cs.phase != NineMensMorrisGamePhase.PLAYING) return@postDelayed
                     if (cs.currentTurn == cs.myColor) return@postDelayed
                     val aiMove = ai.selectMove(cs)
                     if (aiMove != null) applyMove(aiMove)
@@ -308,33 +320,31 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         return manager
     }
 
-    private fun createLocalGameManager(): DotsAndBoxesGameManager {
+    private fun createLocalGameManager(): NineMensMorrisGameManager {
         val localColor = myColor
         val localOpponent = opponent
-        val manager = object : DotsAndBoxesGameManager(
+        val manager = object : NineMensMorrisGameManager(
             onStateChanged = { state -> runOnUiThread { onStateChanged(state) } },
             onError = { error -> runOnUiThread { onError(error) } }
         ) {
             override fun startGame(myColor: PlayerColor, opponent: User?) {
-                val state = DotsAndBoxesGameState.createNew(GameMode.LOCAL, myColor, opponent)
+                val state = NineMensMorrisGameState.createNew(GameMode.LOCAL, myColor, opponent)
                 updateState(state)
             }
 
             override fun resign() {
                 val state = currentState ?: return
-                val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+                val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
                 updateState(state.copy(
-                    phase = DotsAndBoxesGamePhase.GAME_OVER,
-                    result = DotsAndBoxesGameResult(state.currentTurn.opposite(), DotsAndBoxesGameResult.Reason.RESIGNATION, redScore, blueScore)
+                    phase = NineMensMorrisGamePhase.GAME_OVER,
+                    result = NineMensMorrisGameResult(state.currentTurn.opposite(), NineMensMorrisGameResult.Reason.RESIGNATION, redPieces, bluePieces)
                 ))
             }
 
-            override fun selectLine(line: DotsAndBoxesLine) {
+            override fun handleBoardAction(from: Int, to: Int) {
                 val state = currentState ?: return
-                if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
-                if (state.board.isLineDrawn(line)) return
-                val move = DotsAndBoxesMove(line, state.currentTurn)
-                applyMove(move)
+                if (state.phase != NineMensMorrisGamePhase.PLAYING) return
+                super.handleBoardAction(from, to)
             }
 
             fun initGame(color: PlayerColor, opp: User?) { startGame(color, opp) }
@@ -343,38 +353,38 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         return manager
     }
 
-    private fun createNetworkGameManager(): DotsAndBoxesGameManager {
+    private fun createNetworkGameManager(): NineMensMorrisGameManager {
         val pvpManager = PvpGameManagerHolder.get()
         PvpGameManagerHolder.setGameActivityActive(true)
 
-        val manager = object : DotsAndBoxesGameManager(
+        val manager = object : NineMensMorrisGameManager(
             onStateChanged = { state -> runOnUiThread { onStateChanged(state) } },
             onError = { error -> runOnUiThread { onError(error) } }
         ) {
             override fun startGame(myColor: PlayerColor, opponent: User?) {
                 val state = if (gameId != null) {
-                    DotsAndBoxesGameState.createForChallenge(gameId!!, gameMode, myColor, opponent)
+                    NineMensMorrisGameState.createForChallenge(gameId!!, gameMode, myColor, opponent)
                 } else {
-                    DotsAndBoxesGameState.createNew(gameMode, myColor, opponent)
+                    NineMensMorrisGameState.createNew(gameMode, myColor, opponent)
                 }
                 updateState(state)
             }
 
             override fun resign() {
                 val state = currentState ?: return
-                val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+                val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
                 updateState(state.copy(
-                    phase = DotsAndBoxesGamePhase.GAME_OVER,
-                    result = DotsAndBoxesGameResult(state.myColor.opposite(), DotsAndBoxesGameResult.Reason.RESIGNATION, redScore, blueScore)
+                    phase = NineMensMorrisGamePhase.GAME_OVER,
+                    result = NineMensMorrisGameResult(state.myColor.opposite(), NineMensMorrisGameResult.Reason.RESIGNATION, redPieces, bluePieces)
                 ))
             }
 
             override fun leave() {
                 val state = currentState ?: return
-                val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+                val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
                 updateState(state.copy(
-                    phase = DotsAndBoxesGamePhase.GAME_OVER,
-                    result = DotsAndBoxesGameResult(state.myColor.opposite(), DotsAndBoxesGameResult.Reason.OPPONENT_LEFT, redScore, blueScore)
+                    phase = NineMensMorrisGamePhase.GAME_OVER,
+                    result = NineMensMorrisGameResult(state.myColor.opposite(), NineMensMorrisGameResult.Reason.OPPONENT_LEFT, redPieces, bluePieces)
                 ))
             }
 
@@ -384,20 +394,20 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         return manager
     }
 
-    private fun createInternetGameManager(): DotsAndBoxesGameManager {
+    private fun createInternetGameManager(): NineMensMorrisGameManager {
         val aiLevel = (tournament?.id ?: Random.nextInt(3, 8)).coerceIn(1, 9)
-        val ai = DotsAndBoxesAIEngine(level = aiLevel)
-        val manager = object : DotsAndBoxesGameManager(
+        val ai = NineMensMorrisAIEngine(level = aiLevel)
+        val manager = object : NineMensMorrisGameManager(
             onStateChanged = { state -> runOnUiThread { onStateChanged(state) } },
             onError = { error -> runOnUiThread { onError(error) } }
         ) {
             override fun startGame(myColor: PlayerColor, opponent: User?) {
-                val state = DotsAndBoxesGameState.createNew(GameMode.INTERNET, myColor, opponent).let {
+                val state = NineMensMorrisGameState.createNew(GameMode.INTERNET, myColor, opponent).let {
                     if (tournament != null) {
                         it.copy(
                             timerActive = true,
-                            redTimeRemainingMs = DotsAndBoxesGameState.DEFAULT_INITIAL_TIME_MS,
-                            blueTimeRemainingMs = DotsAndBoxesGameState.DEFAULT_INITIAL_TIME_MS,
+                            redTimeRemainingMs = NineMensMorrisGameState.DEFAULT_INITIAL_TIME_MS,
+                            blueTimeRemainingMs = NineMensMorrisGameState.DEFAULT_INITIAL_TIME_MS,
                             isUnlimitedTime = false
                         )
                     } else it
@@ -408,15 +418,15 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
 
             override fun resign() {
                 val state = currentState ?: return
-                val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+                val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
                 updateState(state.copy(
-                    phase = DotsAndBoxesGamePhase.GAME_OVER,
-                    result = DotsAndBoxesGameResult(state.myColor.opposite(), DotsAndBoxesGameResult.Reason.RESIGNATION, redScore, blueScore)
+                    phase = NineMensMorrisGamePhase.GAME_OVER,
+                    result = NineMensMorrisGameResult(state.myColor.opposite(), NineMensMorrisGameResult.Reason.RESIGNATION, redPieces, bluePieces)
                 ))
             }
 
-            override fun onMoveApplied(move: DotsAndBoxesMove, newState: DotsAndBoxesGameState, extraTurn: Boolean) {
-                if (newState.phase == DotsAndBoxesGamePhase.PLAYING && newState.currentTurn != newState.myColor) {
+            override fun onMoveApplied(move: NineMensMorrisMove, newState: NineMensMorrisGameState, mustRemove: Boolean) {
+                if (newState.phase == NineMensMorrisGamePhase.PLAYING && newState.currentTurn != newState.myColor) {
                     scheduleBotMove(newState)
                 }
             }
@@ -426,12 +436,12 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
                 updateState(state.copy(lastChatMessage = message, lastChatSender = "me"))
             }
 
-            fun scheduleBotMove(state: DotsAndBoxesGameState) {
+            fun scheduleBotMove(state: NineMensMorrisGameState) {
                 val delay = ai.calculateThinkingTimeMs(state)
                 aiHandler.postDelayed({
                     if (isActivityDestroyed) return@postDelayed
                     val cs = this.getState() ?: return@postDelayed
-                    if (cs.phase != DotsAndBoxesGamePhase.PLAYING) return@postDelayed
+                    if (cs.phase != NineMensMorrisGamePhase.PLAYING) return@postDelayed
                     if (cs.currentTurn == cs.myColor) return@postDelayed
                     val botMove = ai.selectMove(cs)
                     if (botMove != null) applyMove(botMove)
@@ -446,19 +456,20 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
 
     // ==================== STATE UPDATES ====================
 
-    private fun onStateChanged(state: DotsAndBoxesGameState) {
+    private fun onStateChanged(state: NineMensMorrisGameState) {
         if (isActivityDestroyed) return
         boardView.updateFromState(state)
-        updateScoreDisplay(state)
         updateStatusText(state)
+        updatePiecesInHand(state)
+        handleHints(state)
         updateTimers(state)
         handleIncomingChat(state)
 
-        if (state.phase == DotsAndBoxesGamePhase.GAME_OVER && !hasShownGameOver) {
+        if (state.phase == NineMensMorrisGamePhase.GAME_OVER && !hasShownGameOver) {
             hasShownGameOver = true
             showGameOverDialog(state)
         }
-        if (state.phase == DotsAndBoxesGamePhase.WAITING_REMATCH) {
+        if (state.phase == NineMensMorrisGamePhase.WAITING_REMATCH) {
             showWaitingRematchDialog()
         }
     }
@@ -468,14 +479,72 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
     }
 
-    private fun updateScoreDisplay(state: DotsAndBoxesGameState) {
-        tvRedScore.text = state.getRedScore().toString()
-        tvBlueScore.text = state.getBlueScore().toString()
+    private fun updatePiecesInHand(state: NineMensMorrisGameState) {
+        val redInHand = state.board.piecesInHand(PlayerColor.RED)
+        val blueInHand = state.board.piecesInHand(PlayerColor.BLUE)
+        val isPlacing = state.board.isPlacingPhase()
+
+        tvRedInHand.text = redInHand.toString()
+        tvBlueInHand.text = blueInHand.toString()
+
+        if (wasPlacingPhase && !isPlacing) {
+            // Transition: placing → moving. Fade out the indicator.
+            piecesInHandContainer.animate()
+                .alpha(0f)
+                .setDuration(600)
+                .withEndAction {
+                    piecesInHandContainer.visibility = View.GONE
+                }
+                .start()
+            showTempMessage(getString(R.string.move_phase_started), 2500L)
+            wasPlacingPhase = false
+        } else if (isPlacing && piecesInHandContainer.visibility != View.VISIBLE) {
+            // Game just started or rematch — show the indicator
+            piecesInHandContainer.alpha = 1f
+            piecesInHandContainer.visibility = View.VISIBLE
+            wasPlacingPhase = true
+        }
     }
 
-    private fun updateStatusText(state: DotsAndBoxesGameState) {
+    private fun handleHints(state: NineMensMorrisGameState) {
+        if (state.mustRemove && state.phase == NineMensMorrisGamePhase.PLAYING) {
+            showTempMessage(getString(R.string.mill_formed))
+        }
+    }
+
+    private fun showTempMessage(message: String, durationMs: Long = 2000L) {
+        tvTempMessage.animate().cancel()
+        tempMessageHandler.removeCallbacksAndMessages(null)
+
+        tvTempMessage.text = message
+        tvTempMessage.alpha = 0f
+        tvTempMessage.visibility = View.VISIBLE
+
+        tvTempMessage.animate()
+            .alpha(1f)
+            .setDuration(200)
+            .setListener(null)
+            .start()
+
+        tempMessageHandler.postDelayed({
+            if (isActivityDestroyed) return@postDelayed
+            tvTempMessage.animate()
+                .alpha(0f)
+                .setDuration(500)
+                .withEndAction {
+                    tvTempMessage.visibility = View.GONE
+                }
+                .start()
+        }, durationMs)
+    }
+
+    private fun updateStatusText(state: NineMensMorrisGameState) {
         val statusText = when {
-            state.phase == DotsAndBoxesGamePhase.GAME_OVER -> getString(R.string.game_over)
+            state.phase == NineMensMorrisGamePhase.GAME_OVER -> getString(R.string.game_over)
+            state.mustRemove && state.isMyTurn() -> getString(R.string.remove_opponent_piece)
+            state.mustRemove -> getString(R.string.opponent_removing)
+            state.board.isPlacingPhase() && state.isMyTurn() -> getString(R.string.place_a_piece)
+            state.board.isPlacingPhase() -> getString(R.string.opponent_placing)
             gameMode == GameMode.LOCAL -> {
                 if (state.currentTurn == PlayerColor.RED) {
                     "${getString(R.string.assign_red)} - ${getString(R.string.your_turn)}"
@@ -491,7 +560,7 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
 
     // ==================== TIMER ====================
 
-    private fun updateTimers(state: DotsAndBoxesGameState) {
+    private fun updateTimers(state: NineMensMorrisGameState) {
         if (state.isUnlimitedTime || !state.timerActive) {
             opponentTimerContainer.visibility = View.GONE
             myTimerContainer.visibility = View.GONE
@@ -505,13 +574,13 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         startTimerCountdown(state)
     }
 
-    private fun startTimerCountdown(state: DotsAndBoxesGameState) {
+    private fun startTimerCountdown(state: NineMensMorrisGameState) {
         stopTimer()
         timerRunnable = object : Runnable {
             override fun run() {
                 if (isActivityDestroyed) return
                 val cs = gameManager?.getState() ?: return
-                if (cs.phase != DotsAndBoxesGamePhase.PLAYING) return
+                if (cs.phase != NineMensMorrisGamePhase.PLAYING) return
                 if (!cs.timerActive || cs.isUnlimitedTime) return
 
                 val elapsed = System.currentTimeMillis() - cs.turnStartTime
@@ -537,17 +606,17 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         timerRunnable = null
     }
 
-    private fun handleTimeExpired(state: DotsAndBoxesGameState) {
+    private fun handleTimeExpired(state: NineMensMorrisGameState) {
         stopTimer()
         val winner = state.currentTurn.opposite()
-        val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+        val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
         val newState = state.copy(
-            phase = DotsAndBoxesGamePhase.GAME_OVER,
-            result = DotsAndBoxesGameResult(winner, DotsAndBoxesGameResult.Reason.TIMEOUT, redScore, blueScore)
+            phase = NineMensMorrisGamePhase.GAME_OVER,
+            result = NineMensMorrisGameResult(winner, NineMensMorrisGameResult.Reason.TIMEOUT, redPieces, bluePieces)
         )
         gameManager?.let { manager ->
             try {
-                val method = DotsAndBoxesGameManager::class.java.getDeclaredMethod("updateState", DotsAndBoxesGameState::class.java)
+                val method = NineMensMorrisGameManager::class.java.getDeclaredMethod("updateState", NineMensMorrisGameState::class.java)
                 method.isAccessible = true
                 method.invoke(manager, newState)
             } catch (e: Exception) {
@@ -565,12 +634,12 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
 
     // ==================== USER INTERACTION ====================
 
-    private fun selectLine(line: DotsAndBoxesLine) {
+    private fun handleBoardAction(from: Int, to: Int) {
         val manager = gameManager ?: return
         val state = manager.getState() ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
         if (gameMode != GameMode.LOCAL && !state.isMyTurn()) return
-        manager.selectLine(line)
+        manager.handleBoardAction(from, to)
     }
 
     // ==================== CHAT ====================
@@ -594,7 +663,7 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         chatBar.visibility = View.GONE
     }
 
-    private fun handleIncomingChat(state: DotsAndBoxesGameState) {
+    private fun handleIncomingChat(state: NineMensMorrisGameState) {
         val message = state.incomingChatMessage ?: state.lastChatMessage
         if (message.isNullOrEmpty()) return
         showChatBubble(message)
@@ -618,7 +687,7 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
     private fun showResignDialog() {
         if (resignDialog?.isShowing == true) return
         val state = gameManager?.getState() ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
 
         resignDialog = ResignDialog(
             context = this,
@@ -640,7 +709,7 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         leaveDialog?.show()
     }
 
-    private fun showGameOverDialog(state: DotsAndBoxesGameState) {
+    private fun showGameOverDialog(state: NineMensMorrisGameState) {
         stopTimer()
         btnResign.visibility = View.GONE
 
@@ -658,21 +727,23 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         }
 
         val reasonText = when (result.reason) {
-            DotsAndBoxesGameResult.Reason.GAME_COMPLETE -> "${result.redScore} - ${result.blueScore}"
-            DotsAndBoxesGameResult.Reason.RESIGNATION -> getString(R.string.opponent_resigned)
-            DotsAndBoxesGameResult.Reason.TIMEOUT -> getString(R.string.timeout_loss)
-            DotsAndBoxesGameResult.Reason.OPPONENT_LEFT -> getString(R.string.opponent_left)
-            DotsAndBoxesGameResult.Reason.AGREEMENT -> getString(R.string.draw)
+            NineMensMorrisGameResult.Reason.GAME_COMPLETE -> "${result.redPieces} - ${result.bluePieces}"
+            NineMensMorrisGameResult.Reason.RESIGNATION -> getString(R.string.opponent_resigned)
+            NineMensMorrisGameResult.Reason.TIMEOUT -> getString(R.string.timeout_loss)
+            NineMensMorrisGameResult.Reason.OPPONENT_LEFT -> getString(R.string.opponent_left)
+            NineMensMorrisGameResult.Reason.AGREEMENT -> getString(R.string.draw)
+            NineMensMorrisGameResult.Reason.REPETITION -> getString(R.string.draw_by_repetition)
         }
 
         val pvpResult = PvpGameResult(
             winnerSide = result.winner?.let { if (it == PlayerColor.RED) PlayerSide.FIRST else PlayerSide.SECOND },
             reason = when (result.reason) {
-                DotsAndBoxesGameResult.Reason.GAME_COMPLETE -> PvpGameResult.Reason.GAME_RULE
-                DotsAndBoxesGameResult.Reason.RESIGNATION -> PvpGameResult.Reason.RESIGNATION
-                DotsAndBoxesGameResult.Reason.TIMEOUT -> PvpGameResult.Reason.TIMEOUT
-                DotsAndBoxesGameResult.Reason.OPPONENT_LEFT -> PvpGameResult.Reason.OPPONENT_LEFT
-                DotsAndBoxesGameResult.Reason.AGREEMENT -> PvpGameResult.Reason.DRAW
+                NineMensMorrisGameResult.Reason.GAME_COMPLETE -> PvpGameResult.Reason.GAME_RULE
+                NineMensMorrisGameResult.Reason.RESIGNATION -> PvpGameResult.Reason.RESIGNATION
+                NineMensMorrisGameResult.Reason.TIMEOUT -> PvpGameResult.Reason.TIMEOUT
+                NineMensMorrisGameResult.Reason.OPPONENT_LEFT -> PvpGameResult.Reason.OPPONENT_LEFT
+                NineMensMorrisGameResult.Reason.AGREEMENT -> PvpGameResult.Reason.DRAW
+                NineMensMorrisGameResult.Reason.REPETITION -> PvpGameResult.Reason.DRAW
             },
             displayText = resultTitle
         )
@@ -750,8 +821,8 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         val state = gameManager?.getState()
         when {
             state == null -> finish()
-            state.phase == DotsAndBoxesGamePhase.GAME_OVER -> finish()
-            state.phase == DotsAndBoxesGamePhase.PLAYING -> showLeaveDialog()
+            state.phase == NineMensMorrisGamePhase.GAME_OVER -> finish()
+            state.phase == NineMensMorrisGamePhase.PLAYING -> showLeaveDialog()
             else -> finish()
         }
     }
@@ -772,6 +843,7 @@ class DotsAndBoxesGameActivity : AppCompatActivity() {
         stopTimer()
         aiHandler.removeCallbacksAndMessages(null)
         chatDismissRunnable?.let { chatHandler.removeCallbacks(it) }
+        tempMessageHandler.removeCallbacksAndMessages(null)
         versusDialog?.dismiss()
         resignDialog?.dismiss()
         leaveDialog?.dismiss()

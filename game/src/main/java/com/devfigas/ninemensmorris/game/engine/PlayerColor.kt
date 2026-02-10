@@ -1,4 +1,4 @@
-package com.devfigas.dotsandboxes.game.engine
+package com.devfigas.ninemensmorris.game.engine
 
 enum class PlayerColor {
     RED,

@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "dots-and-boxes"
+rootProject.name = "nine-mens-morris"
 include(":game")
 include(":p2pkit")
 include(":uikit")

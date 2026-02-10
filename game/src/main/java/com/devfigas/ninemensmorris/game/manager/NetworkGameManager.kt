@@ -1,19 +1,19 @@
-package com.devfigas.dotsandboxes.game.manager
+package com.devfigas.ninemensmorris.game.manager
 
 import android.os.Handler
 import android.os.Looper
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesBoard
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesMove
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesRules
-import com.devfigas.dotsandboxes.game.engine.PlayerColor
-import com.devfigas.dotsandboxes.game.message.DotsAndBoxesMessageAdapter.decodeMoveData
-import com.devfigas.dotsandboxes.game.message.DotsAndBoxesMessageAdapter.encodeMoveData
-import com.devfigas.dotsandboxes.game.message.DotsAndBoxesMessageAdapter.toPlayerColor
-import com.devfigas.dotsandboxes.game.message.DotsAndBoxesMessageAdapter.toSideName
-import com.devfigas.dotsandboxes.game.state.DotsAndBoxesGamePhase
-import com.devfigas.dotsandboxes.game.state.DotsAndBoxesGameResult
-import com.devfigas.dotsandboxes.game.state.DotsAndBoxesGameState
-import com.devfigas.dotsandboxes.game.state.SyncStatus
+import com.devfigas.ninemensmorris.game.engine.NineMensMorrisBoard
+import com.devfigas.ninemensmorris.game.engine.NineMensMorrisMove
+import com.devfigas.ninemensmorris.game.engine.NineMensMorrisRules
+import com.devfigas.ninemensmorris.game.engine.PlayerColor
+import com.devfigas.ninemensmorris.game.message.NineMensMorrisMessageAdapter.decodeMoveData
+import com.devfigas.ninemensmorris.game.message.NineMensMorrisMessageAdapter.encodeMoveData
+import com.devfigas.ninemensmorris.game.message.NineMensMorrisMessageAdapter.toPlayerColor
+import com.devfigas.ninemensmorris.game.message.NineMensMorrisMessageAdapter.toSideName
+import com.devfigas.ninemensmorris.game.state.NineMensMorrisGamePhase
+import com.devfigas.ninemensmorris.game.state.NineMensMorrisGameResult
+import com.devfigas.ninemensmorris.game.state.NineMensMorrisGameState
+import com.devfigas.ninemensmorris.game.state.SyncStatus
 import com.devfigas.gridgame.model.PlayerSide
 import com.devfigas.mockpvp.game.PvpLobbyGameState
 import com.devfigas.mockpvp.game.PvpGamePhase
@@ -28,10 +28,10 @@ import lib.devfigas.model.domain.entity.Status
 import java.util.UUID
 
 class NetworkGameManager(
-    onStateChanged: (DotsAndBoxesGameState) -> Unit,
+    onStateChanged: (NineMensMorrisGameState) -> Unit,
     onError: (String) -> Unit,
     private val gameMode: GameMode
-) : DotsAndBoxesGameManager(onStateChanged, onError), PvpNetworkGameManager {
+) : NineMensMorrisGameManager(onStateChanged, onError), PvpNetworkGameManager {
 
     private var lobbyStateCallback: ((PvpLobbyGameState) -> Unit)? = null
     private var lobbyErrorCallback: ((String) -> Unit)? = null
@@ -56,15 +56,15 @@ class NetworkGameManager(
     private var challengeTimeoutRunnable: Runnable? = null
     private var turnTimeoutRunnable: Runnable? = null
     private var opponentTimeoutRunnable: Runnable? = null
-    private var stateBeforePendingMove: DotsAndBoxesGameState? = null
+    private var stateBeforePendingMove: NineMensMorrisGameState? = null
 
     override fun challenge(opponent: User) {
         val gameId = UUID.randomUUID().toString().take(8)
         isChallenger = true
 
-        val state = DotsAndBoxesGameState.createNew(gameMode, PlayerColor.RED, opponent).copy(
+        val state = NineMensMorrisGameState.createNew(gameMode, PlayerColor.RED, opponent).copy(
             gameId = gameId,
-            phase = DotsAndBoxesGamePhase.WAITING_CHALLENGE,
+            phase = NineMensMorrisGamePhase.WAITING_CHALLENGE,
             isHost = true,
             isUnlimitedTime = true,
             timerActive = false
@@ -82,7 +82,7 @@ class NetworkGameManager(
         cancelChallengeTimeout()
         challengeTimeoutRunnable = Runnable {
             val state = currentState
-            if (state?.phase == DotsAndBoxesGamePhase.WAITING_CHALLENGE) {
+            if (state?.phase == NineMensMorrisGamePhase.WAITING_CHALLENGE) {
                 notifyError("$opponentName did not respond. They may be offline.")
                 resetGame()
             }
@@ -99,7 +99,7 @@ class NetworkGameManager(
         cancelTurnTimer()
         cancelOpponentTimeoutTimer()
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
 
         if (state.currentTurn == state.myColor) {
             updateState(state.copy(turnStartTime = System.currentTimeMillis()))
@@ -123,7 +123,7 @@ class NetworkGameManager(
 
     fun checkAndHandleTimeout() {
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
         if (state.currentTurn == state.myColor) {
             val elapsed = System.currentTimeMillis() - state.turnStartTime
             if (elapsed >= TURN_TIMEOUT_MS) handleTurnTimeout()
@@ -132,28 +132,28 @@ class NetworkGameManager(
 
     private fun handleTurnTimeout() {
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
         if (state.currentTurn != state.myColor) return
 
         val opponent = state.opponent ?: return
         sendMessage(opponent, PvpMessage.TimeoutLoss(state.gameId))
 
-        val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+        val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
         updateState(state.copy(
-            phase = DotsAndBoxesGamePhase.GAME_OVER,
-            result = DotsAndBoxesGameResult(state.myColor.opposite(), DotsAndBoxesGameResult.Reason.TIMEOUT, redScore, blueScore)
+            phase = NineMensMorrisGamePhase.GAME_OVER,
+            result = NineMensMorrisGameResult(state.myColor.opposite(), NineMensMorrisGameResult.Reason.TIMEOUT, redPieces, bluePieces)
         ))
     }
 
     private fun handleOpponentTimeout() {
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
         if (state.currentTurn == state.myColor) return
 
-        val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+        val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
         updateState(state.copy(
-            phase = DotsAndBoxesGamePhase.GAME_OVER,
-            result = DotsAndBoxesGameResult(state.myColor, DotsAndBoxesGameResult.Reason.TIMEOUT, redScore, blueScore)
+            phase = NineMensMorrisGamePhase.GAME_OVER,
+            result = NineMensMorrisGameResult(state.myColor, NineMensMorrisGameResult.Reason.TIMEOUT, redPieces, bluePieces)
         ))
     }
 
@@ -205,16 +205,16 @@ class NetworkGameManager(
         val currentPhase = currentState?.phase
         val myGameId = currentState?.gameId
 
-        if (currentPhase == DotsAndBoxesGamePhase.WAITING_CHALLENGE && myGameId != null) {
+        if (currentPhase == NineMensMorrisGamePhase.WAITING_CHALLENGE && myGameId != null) {
             if (message.gameId < myGameId) {
                 cancelChallengeTimeout()
             } else return
-        } else if (currentPhase != null && currentPhase != DotsAndBoxesGamePhase.GAME_OVER) return
+        } else if (currentPhase != null && currentPhase != NineMensMorrisGamePhase.GAME_OVER) return
 
         isChallenger = false
-        val state = DotsAndBoxesGameState.createNew(gameMode, PlayerColor.RED, sender).copy(
+        val state = NineMensMorrisGameState.createNew(gameMode, PlayerColor.RED, sender).copy(
             gameId = message.gameId,
-            phase = DotsAndBoxesGamePhase.CHALLENGE_RECEIVED,
+            phase = NineMensMorrisGamePhase.CHALLENGE_RECEIVED,
             isHost = false,
             isUnlimitedTime = true,
             timerActive = false
@@ -224,11 +224,11 @@ class NetworkGameManager(
 
     fun acceptChallenge(assignChallengerColor: PlayerColor) {
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.CHALLENGE_RECEIVED) return
+        if (state.phase != NineMensMorrisGamePhase.CHALLENGE_RECEIVED) return
         val opponent = state.opponent ?: return
 
         val myColor = assignChallengerColor.opposite()
-        val newState = DotsAndBoxesGameState.createForChallenge(state.gameId, gameMode, myColor, opponent).copy(
+        val newState = NineMensMorrisGameState.createForChallenge(state.gameId, gameMode, myColor, opponent).copy(
             isHost = false, isUnlimitedTime = true, timerActive = false
         )
         updateState(newState)
@@ -238,7 +238,7 @@ class NetworkGameManager(
 
     override fun rejectChallenge() {
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.CHALLENGE_RECEIVED) return
+        if (state.phase != NineMensMorrisGamePhase.CHALLENGE_RECEIVED) return
         val opponent = state.opponent ?: return
         sendMessage(opponent, PvpMessage.Reject(state.gameId))
         resetGame()
@@ -247,11 +247,11 @@ class NetworkGameManager(
     private fun handleAccept(sender: User, message: PvpMessage.Accept) {
         val state = currentState ?: return
         if (state.gameId != message.gameId) return
-        if (state.phase != DotsAndBoxesGamePhase.WAITING_CHALLENGE) return
+        if (state.phase != NineMensMorrisGamePhase.WAITING_CHALLENGE) return
         cancelChallengeTimeout()
 
         val challengerColor = message.challengerSide.toPlayerColor()
-        val newState = DotsAndBoxesGameState.createForChallenge(state.gameId, gameMode, challengerColor, sender).copy(
+        val newState = NineMensMorrisGameState.createForChallenge(state.gameId, gameMode, challengerColor, sender).copy(
             isHost = true, isUnlimitedTime = true, timerActive = false
         )
         updateState(newState)
@@ -269,28 +269,28 @@ class NetworkGameManager(
     override fun startGame(myColor: PlayerColor, opponent: User?) {
         if (opponent == null) return
         val gameId = UUID.randomUUID().toString().take(8)
-        val state = DotsAndBoxesGameState.createNew(gameMode, myColor, opponent).copy(
-            gameId = gameId, phase = DotsAndBoxesGamePhase.PLAYING,
+        val state = NineMensMorrisGameState.createNew(gameMode, myColor, opponent).copy(
+            gameId = gameId, phase = NineMensMorrisGamePhase.PLAYING,
             isUnlimitedTime = true, timerActive = false
         )
         updateState(state)
     }
 
-    override fun selectLine(line: com.devfigas.dotsandboxes.game.engine.DotsAndBoxesLine) {
+    override fun handleBoardAction(from: Int, to: Int) {
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
         if (state.currentTurn != state.myColor) return
-        super.selectLine(line)
+        super.handleBoardAction(from, to)
     }
 
-    override fun applyMove(move: DotsAndBoxesMove) {
+    override fun applyMove(move: NineMensMorrisMove) {
         if (!isApplyingReceivedMove) {
             stateBeforePendingMove = currentState
         }
         super.applyMove(move)
     }
 
-    override fun onMoveApplied(move: DotsAndBoxesMove, newState: DotsAndBoxesGameState, extraTurn: Boolean) {
+    override fun onMoveApplied(move: NineMensMorrisMove, newState: NineMensMorrisGameState, mustRemove: Boolean) {
         cancelTurnTimer()
         cancelOpponentTimeoutTimer()
 
@@ -308,7 +308,7 @@ class NetworkGameManager(
 
         val moveMessage = PvpMessage.Move(
             gameId = newState.gameId,
-            moveData = encodeMoveData(move.line),
+            moveData = encodeMoveData(move),
             moveNum = newMoveNum
         )
         sendMoveWithRetry(opponent, moveMessage)
@@ -318,7 +318,7 @@ class NetworkGameManager(
     private fun handleMove(message: PvpMessage.Move) {
         val state = currentState ?: return
         if (state.gameId != message.gameId) return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
 
         lastSentMove?.let { sent ->
             if (sent.moveData == message.moveData && sent.gameId == message.gameId) {
@@ -339,12 +339,13 @@ class NetworkGameManager(
             return
         }
 
-        if (state.currentTurn == state.myColor) return
+        if (state.currentTurn == state.myColor && !state.mustRemove) return
 
-        val line = decodeMoveData(message.moveData) ?: return
-        if (state.board.isLineDrawn(line)) return
+        val move = decodeMoveData(message.moveData, state.currentTurn) ?: return
 
-        val move = DotsAndBoxesMove(line, state.currentTurn)
+        // Validate the move
+        val validMoves = NineMensMorrisRules.getValidMoves(state.board, state.currentTurn, state.mustRemove)
+        if (validMoves.none { it.type == move.type && it.from == move.from && it.to == move.to }) return
 
         isApplyingReceivedMove = true
         try {
@@ -376,10 +377,10 @@ class NetworkGameManager(
         cancelOpponentTimeoutTimer()
         sendMessage(opponent, PvpMessage.Resign(state.gameId))
 
-        val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+        val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
         updateState(state.copy(
-            phase = DotsAndBoxesGamePhase.GAME_OVER,
-            result = DotsAndBoxesGameResult(state.myColor.opposite(), DotsAndBoxesGameResult.Reason.RESIGNATION, redScore, blueScore)
+            phase = NineMensMorrisGamePhase.GAME_OVER,
+            result = NineMensMorrisGameResult(state.myColor.opposite(), NineMensMorrisGameResult.Reason.RESIGNATION, redPieces, bluePieces)
         ))
     }
 
@@ -390,10 +391,10 @@ class NetworkGameManager(
         cancelOpponentTimeoutTimer()
         sendMessage(opponent, PvpMessage.Leave(state.gameId))
 
-        val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+        val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
         updateState(state.copy(
-            phase = DotsAndBoxesGamePhase.GAME_OVER,
-            result = DotsAndBoxesGameResult(state.myColor.opposite(), DotsAndBoxesGameResult.Reason.OPPONENT_LEFT, redScore, blueScore)
+            phase = NineMensMorrisGamePhase.GAME_OVER,
+            result = NineMensMorrisGameResult(state.myColor.opposite(), NineMensMorrisGameResult.Reason.OPPONENT_LEFT, redPieces, bluePieces)
         ))
     }
 
@@ -402,10 +403,10 @@ class NetworkGameManager(
         if (state.gameId != message.gameId) return
         cancelTurnTimer()
         cancelOpponentTimeoutTimer()
-        val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+        val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
         updateState(state.copy(
-            phase = DotsAndBoxesGamePhase.GAME_OVER,
-            result = DotsAndBoxesGameResult(state.myColor, DotsAndBoxesGameResult.Reason.RESIGNATION, redScore, blueScore)
+            phase = NineMensMorrisGamePhase.GAME_OVER,
+            result = NineMensMorrisGameResult(state.myColor, NineMensMorrisGameResult.Reason.RESIGNATION, redPieces, bluePieces)
         ))
     }
 
@@ -414,10 +415,10 @@ class NetworkGameManager(
         if (state.gameId != message.gameId) return
         cancelTurnTimer()
         cancelOpponentTimeoutTimer()
-        val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+        val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
         updateState(state.copy(
-            phase = DotsAndBoxesGamePhase.GAME_OVER,
-            result = DotsAndBoxesGameResult(state.myColor, DotsAndBoxesGameResult.Reason.OPPONENT_LEFT, redScore, blueScore)
+            phase = NineMensMorrisGamePhase.GAME_OVER,
+            result = NineMensMorrisGameResult(state.myColor, NineMensMorrisGameResult.Reason.OPPONENT_LEFT, redPieces, bluePieces)
         ))
     }
 
@@ -426,10 +427,10 @@ class NetworkGameManager(
         if (state.gameId != message.gameId) return
         cancelTurnTimer()
         cancelOpponentTimeoutTimer()
-        val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+        val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
         updateState(state.copy(
-            phase = DotsAndBoxesGamePhase.GAME_OVER,
-            result = DotsAndBoxesGameResult(state.myColor, DotsAndBoxesGameResult.Reason.TIMEOUT, redScore, blueScore)
+            phase = NineMensMorrisGamePhase.GAME_OVER,
+            result = NineMensMorrisGameResult(state.myColor, NineMensMorrisGameResult.Reason.TIMEOUT, redPieces, bluePieces)
         ))
     }
 
@@ -438,7 +439,7 @@ class NetworkGameManager(
         val opponent = state.opponent ?: return
         sendMessage(opponent, PvpMessage.RematchVote(state.gameId, vote))
         if (vote) {
-            updateState(state.copy(myRematchVote = vote, phase = DotsAndBoxesGamePhase.WAITING_REMATCH))
+            updateState(state.copy(myRematchVote = vote, phase = NineMensMorrisGamePhase.WAITING_REMATCH))
         } else {
             updateState(state.copy(myRematchVote = vote))
         }
@@ -449,7 +450,7 @@ class NetworkGameManager(
         val state = currentState ?: return
         val opponent = state.opponent ?: return
         sendMessage(opponent, PvpMessage.RematchVote(state.gameId, false))
-        updateState(state.copy(myRematchVote = false, phase = DotsAndBoxesGamePhase.GAME_OVER))
+        updateState(state.copy(myRematchVote = false, phase = NineMensMorrisGamePhase.GAME_OVER))
     }
 
     private fun handleRematchVote(message: PvpMessage.RematchVote) {
@@ -467,7 +468,7 @@ class NetworkGameManager(
 
     private fun handleRematchStart(sender: User, message: PvpMessage.RematchStart) {
         val opponentColor = message.opponentSide.toPlayerColor()
-        val newState = DotsAndBoxesGameState.createForChallenge(message.newGameId, gameMode, opponentColor, sender).copy(
+        val newState = NineMensMorrisGameState.createForChallenge(message.newGameId, gameMode, opponentColor, sender).copy(
             isHost = false, isUnlimitedTime = true, timerActive = false
         )
         updateState(newState)
@@ -484,7 +485,7 @@ class NetworkGameManager(
             oldGameId = state.gameId, newGameId = newGameId, opponentSide = opponentColor.toSideName()
         ))
 
-        val newState = DotsAndBoxesGameState.createForChallenge(newGameId, gameMode, newColor, opponent).copy(
+        val newState = NineMensMorrisGameState.createForChallenge(newGameId, gameMode, newColor, opponent).copy(
             isHost = true, isUnlimitedTime = true, timerActive = false
         )
         updateState(newState)
@@ -562,7 +563,7 @@ class NetworkGameManager(
         if (state.gameId != message.gameId) return
         if (state.isHost) return
 
-        val newBoard = DotsAndBoxesBoard.decode(message.stateData) ?: run {
+        val newBoard = NineMensMorrisBoard.decode(message.stateData) ?: run {
             notifyError("Sync failed - invalid board state")
             return
         }
@@ -614,20 +615,20 @@ class NetworkGameManager(
         )
     }
 
-    private fun DotsAndBoxesGameState.toPvpLobbyState(): PvpLobbyGameState {
+    private fun NineMensMorrisGameState.toPvpLobbyState(): PvpLobbyGameState {
         return PvpLobbyGameState(
             phase = phase.toPvpPhase(), opponent = opponent,
             mySide = myColor.toPlayerSide(), gameId = gameId
         )
     }
 
-    private fun DotsAndBoxesGamePhase.toPvpPhase(): PvpGamePhase {
+    private fun NineMensMorrisGamePhase.toPvpPhase(): PvpGamePhase {
         return when (this) {
-            DotsAndBoxesGamePhase.WAITING_CHALLENGE -> PvpGamePhase.WAITING_CHALLENGE
-            DotsAndBoxesGamePhase.CHALLENGE_RECEIVED -> PvpGamePhase.CHALLENGE_RECEIVED
-            DotsAndBoxesGamePhase.PLAYING -> PvpGamePhase.PLAYING
-            DotsAndBoxesGamePhase.GAME_OVER -> PvpGamePhase.GAME_OVER
-            DotsAndBoxesGamePhase.WAITING_REMATCH -> PvpGamePhase.WAITING_REMATCH
+            NineMensMorrisGamePhase.WAITING_CHALLENGE -> PvpGamePhase.WAITING_CHALLENGE
+            NineMensMorrisGamePhase.CHALLENGE_RECEIVED -> PvpGamePhase.CHALLENGE_RECEIVED
+            NineMensMorrisGamePhase.PLAYING -> PvpGamePhase.PLAYING
+            NineMensMorrisGamePhase.GAME_OVER -> PvpGamePhase.GAME_OVER
+            NineMensMorrisGamePhase.WAITING_REMATCH -> PvpGamePhase.WAITING_REMATCH
         }
     }
 

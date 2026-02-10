@@ -1,9 +1,8 @@
-package com.devfigas.dotsandboxes.game.state
+package com.devfigas.ninemensmorris.game.state
 
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesBoard
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesMove
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesRules
-import com.devfigas.dotsandboxes.game.engine.PlayerColor
+import com.devfigas.ninemensmorris.game.engine.NineMensMorrisBoard
+import com.devfigas.ninemensmorris.game.engine.NineMensMorrisMove
+import com.devfigas.ninemensmorris.game.engine.PlayerColor
 import com.devfigas.mockpvp.model.GameMode
 import com.devfigas.mockpvp.model.User
 import java.util.UUID
@@ -14,26 +13,26 @@ enum class SyncStatus {
     SYNCING
 }
 
-data class DotsAndBoxesGameState(
+data class NineMensMorrisGameState(
     val gameId: String,
-    val board: DotsAndBoxesBoard,
+    val board: NineMensMorrisBoard,
     val currentTurn: PlayerColor,
-    val phase: DotsAndBoxesGamePhase,
+    val phase: NineMensMorrisGamePhase,
     val gameMode: GameMode,
     val myColor: PlayerColor,
     val opponent: User?,
-    val moveHistory: List<DotsAndBoxesMove> = emptyList(),
-    val result: DotsAndBoxesGameResult? = null,
+    val moveHistory: List<NineMensMorrisMove> = emptyList(),
+    val result: NineMensMorrisGameResult? = null,
+    val mustRemove: Boolean = false,
+    val positionHistory: List<String> = emptyList(),
     val myRematchVote: Boolean? = null,
     val opponentRematchVote: Boolean? = null,
     val lastChatMessage: String? = null,
     val lastChatSender: String? = null,
     val incomingChatMessage: String? = null,
-    // Sync fields
     val isHost: Boolean = false,
     val moveNum: Int = 0,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
-    // Timer fields
     val turnStartTime: Long = System.currentTimeMillis(),
     val turnTimeoutMs: Long = TURN_TIMEOUT_MS,
     val redTimeRemainingMs: Long = DEFAULT_INITIAL_TIME_MS,
@@ -59,15 +58,21 @@ data class DotsAndBoxesGameState(
         return currentPlayerTimeRemainingMs() <= 0
     }
 
-    fun getRedScore(): Int = board.countBoxes(PlayerColor.RED)
+    fun getRedScore(): Int = board.piecesOnBoard(PlayerColor.RED)
 
-    fun getBlueScore(): Int = board.countBoxes(PlayerColor.BLUE)
+    fun getBlueScore(): Int = board.piecesOnBoard(PlayerColor.BLUE)
 
     fun getMyScore(): Int =
         if (myColor == PlayerColor.RED) getRedScore() else getBlueScore()
 
     fun getOpponentScore(): Int =
         if (myColor == PlayerColor.RED) getBlueScore() else getRedScore()
+
+    fun isThreefoldRepetition(): Boolean {
+        if (board.isPlacingPhase()) return false
+        val currentEncoding = board.encode() + "|" + currentTurn.name
+        return positionHistory.count { it == currentEncoding } >= 3
+    }
 
     companion object {
         const val TURN_TIMEOUT_MS = 30_000L
@@ -78,13 +83,13 @@ data class DotsAndBoxesGameState(
             gameMode: GameMode,
             myColor: PlayerColor,
             opponent: User?
-        ): DotsAndBoxesGameState {
-            val board = DotsAndBoxesBoard.createEmpty()
-            return DotsAndBoxesGameState(
+        ): NineMensMorrisGameState {
+            val board = NineMensMorrisBoard.createEmpty()
+            return NineMensMorrisGameState(
                 gameId = UUID.randomUUID().toString(),
                 board = board,
                 currentTurn = PlayerColor.RED,
-                phase = DotsAndBoxesGamePhase.PLAYING,
+                phase = NineMensMorrisGamePhase.PLAYING,
                 gameMode = gameMode,
                 myColor = myColor,
                 opponent = opponent
@@ -96,13 +101,13 @@ data class DotsAndBoxesGameState(
             gameMode: GameMode,
             myColor: PlayerColor,
             opponent: User?
-        ): DotsAndBoxesGameState {
-            val board = DotsAndBoxesBoard.createEmpty()
-            return DotsAndBoxesGameState(
+        ): NineMensMorrisGameState {
+            val board = NineMensMorrisBoard.createEmpty()
+            return NineMensMorrisGameState(
                 gameId = gameId,
                 board = board,
                 currentTurn = PlayerColor.RED,
-                phase = DotsAndBoxesGamePhase.PLAYING,
+                phase = NineMensMorrisGamePhase.PLAYING,
                 gameMode = gameMode,
                 myColor = myColor,
                 opponent = opponent

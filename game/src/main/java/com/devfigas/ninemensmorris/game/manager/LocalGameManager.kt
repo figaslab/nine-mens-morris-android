@@ -1,28 +1,27 @@
-package com.devfigas.dotsandboxes.game.manager
+package com.devfigas.ninemensmorris.game.manager
 
 import android.os.Handler
 import android.os.Looper
-import com.devfigas.dotsandboxes.game.ai.DotsAndBoxesAI
-import com.devfigas.dotsandboxes.game.ai.DotsAndBoxesAIEngine
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesLine
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesMove
-import com.devfigas.dotsandboxes.game.engine.DotsAndBoxesRules
-import com.devfigas.dotsandboxes.game.engine.PlayerColor
-import com.devfigas.dotsandboxes.game.state.DotsAndBoxesGamePhase
-import com.devfigas.dotsandboxes.game.state.DotsAndBoxesGameResult
-import com.devfigas.dotsandboxes.game.state.DotsAndBoxesGameState
+import com.devfigas.ninemensmorris.game.ai.NineMensMorrisAI
+import com.devfigas.ninemensmorris.game.ai.NineMensMorrisAIEngine
+import com.devfigas.ninemensmorris.game.engine.NineMensMorrisMove
+import com.devfigas.ninemensmorris.game.engine.NineMensMorrisRules
+import com.devfigas.ninemensmorris.game.engine.PlayerColor
+import com.devfigas.ninemensmorris.game.state.NineMensMorrisGamePhase
+import com.devfigas.ninemensmorris.game.state.NineMensMorrisGameResult
+import com.devfigas.ninemensmorris.game.state.NineMensMorrisGameState
 import com.devfigas.mockpvp.model.GameMode
 import com.devfigas.mockpvp.model.User
 import kotlin.random.Random
 
 class LocalGameManager(
-    onStateChanged: (DotsAndBoxesGameState) -> Unit,
+    onStateChanged: (NineMensMorrisGameState) -> Unit,
     onError: (String) -> Unit,
     private val gameMode: GameMode
-) : DotsAndBoxesGameManager(onStateChanged, onError) {
+) : NineMensMorrisGameManager(onStateChanged, onError) {
 
     private val usesAI: Boolean = gameMode == GameMode.CPU || gameMode == GameMode.INTERNET
-    private val ai: DotsAndBoxesAI? = if (usesAI) DotsAndBoxesAIEngine(level = AI_LEVEL) else null
+    private val ai: NineMensMorrisAI? = if (usesAI) NineMensMorrisAIEngine(level = AI_LEVEL) else null
     private val handler = Handler(Looper.getMainLooper())
     private var cpuColor: PlayerColor = PlayerColor.BLUE
 
@@ -37,38 +36,34 @@ class LocalGameManager(
     override fun startGame(myColor: PlayerColor, opponent: User?) {
         cpuColor = myColor.opposite()
 
-        val state = DotsAndBoxesGameState.createNew(gameMode, myColor, opponent).copy(
+        val state = NineMensMorrisGameState.createNew(gameMode, myColor, opponent).copy(
             isUnlimitedTime = gameMode != GameMode.INTERNET,
             timerActive = false
         )
 
         updateState(state)
 
-        // If AI plays RED (first), make first move
         if (usesAI && cpuColor == PlayerColor.RED) {
             scheduleCPUMove()
         }
     }
 
-    override fun selectLine(line: DotsAndBoxesLine) {
+    override fun handleBoardAction(from: Int, to: Int) {
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
-
-        // In AI modes, only allow selection when it's player's turn
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
         if (usesAI && state.currentTurn == cpuColor) return
-
-        super.selectLine(line)
+        super.handleBoardAction(from, to)
     }
 
-    override fun onMoveApplied(move: DotsAndBoxesMove, newState: DotsAndBoxesGameState, extraTurn: Boolean) {
-        if (usesAI && newState.phase == DotsAndBoxesGamePhase.PLAYING && newState.currentTurn == cpuColor) {
+    override fun onMoveApplied(move: NineMensMorrisMove, newState: NineMensMorrisGameState, mustRemove: Boolean) {
+        if (usesAI && newState.phase == NineMensMorrisGamePhase.PLAYING && newState.currentTurn == cpuColor) {
             scheduleCPUMove()
         }
     }
 
     private fun scheduleCPUMove() {
         val delay = if (gameMode == GameMode.INTERNET) {
-            val aiEngine = ai as? DotsAndBoxesAIEngine
+            val aiEngine = ai as? NineMensMorrisAIEngine
             val state = currentState
             if (aiEngine != null && state != null) aiEngine.calculateThinkingTimeMs(state) else CPU_FIXED_DELAY
         } else {
@@ -79,7 +74,7 @@ class LocalGameManager(
 
     private fun makeCPUMove() {
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
         if (state.currentTurn != cpuColor) return
 
         val move = ai?.selectMove(state)
@@ -91,10 +86,10 @@ class LocalGameManager(
     override fun resign() {
         val state = currentState ?: return
         val winner = if (usesAI) cpuColor else state.currentTurn.opposite()
-        val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+        val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
         updateState(state.copy(
-            phase = DotsAndBoxesGamePhase.GAME_OVER,
-            result = DotsAndBoxesGameResult(winner, DotsAndBoxesGameResult.Reason.RESIGNATION, redScore, blueScore)
+            phase = NineMensMorrisGamePhase.GAME_OVER,
+            result = NineMensMorrisGameResult(winner, NineMensMorrisGameResult.Reason.RESIGNATION, redPieces, bluePieces)
         ))
     }
 
@@ -106,7 +101,7 @@ class LocalGameManager(
         } else if (gameMode == GameMode.INTERNET) {
             updateState(state.copy(
                 myRematchVote = vote,
-                phase = if (vote) DotsAndBoxesGamePhase.WAITING_REMATCH else DotsAndBoxesGamePhase.GAME_OVER
+                phase = if (vote) NineMensMorrisGamePhase.WAITING_REMATCH else NineMensMorrisGamePhase.GAME_OVER
             ))
             if (vote) {
                 val responseDelay = Random.nextLong(MIN_REMATCH_RESPONSE_DELAY, MAX_REMATCH_RESPONSE_DELAY)
@@ -119,7 +114,7 @@ class LocalGameManager(
                     } else {
                         updateState(currentState.copy(
                             opponentRematchVote = false,
-                            phase = DotsAndBoxesGamePhase.GAME_OVER
+                            phase = NineMensMorrisGamePhase.GAME_OVER
                         ))
                     }
                 }, responseDelay)
@@ -145,16 +140,16 @@ class LocalGameManager(
 
     fun checkAndHandleTimeout() {
         val state = currentState ?: return
-        if (state.phase != DotsAndBoxesGamePhase.PLAYING) return
+        if (state.phase != NineMensMorrisGamePhase.PLAYING) return
         if (state.isUnlimitedTime) return
         if (!state.timerActive) return
 
         if (state.isTimeExpired()) {
             val winner = state.currentTurn.opposite()
-            val (redScore, blueScore) = DotsAndBoxesRules.getScore(state.board)
+            val (redPieces, bluePieces) = NineMensMorrisRules.getScore(state.board)
             updateState(state.copy(
-                phase = DotsAndBoxesGamePhase.GAME_OVER,
-                result = DotsAndBoxesGameResult(winner, DotsAndBoxesGameResult.Reason.TIMEOUT, redScore, blueScore)
+                phase = NineMensMorrisGamePhase.GAME_OVER,
+                result = NineMensMorrisGameResult(winner, NineMensMorrisGameResult.Reason.TIMEOUT, redPieces, bluePieces)
             ))
         }
     }

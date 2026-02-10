@@ -1,4 +1,4 @@
-package com.devfigas.dotsandboxes
+package com.devfigas.ninemensmorris
 
 import android.app.ActivityManager
 import android.app.Application
@@ -11,7 +11,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         if (!isMainProcess()) return
-        PvpGameFactoryRegistry.register(DotsAndBoxesGameFactory())
+        PvpGameFactoryRegistry.register(NineMensMorrisGameFactory())
         P2PKit.init(this)
         AnalyticsManager.initialize(this)
     }

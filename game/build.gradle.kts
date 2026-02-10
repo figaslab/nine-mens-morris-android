@@ -7,19 +7,19 @@ plugins {
 }
 
 android {
-    namespace = "com.devfigas.dotsandboxes"
+    namespace = "com.devfigas.ninemensmorris"
     compileSdk = 35
     buildFeatures {
         buildConfig = true
     }
     defaultConfig {
-        applicationId = "com.devfigas.dotsandboxes"
+        applicationId = "com.devfigas.ninemensmorris"
         minSdk = 23
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
-        testApplicationId = "com.devfigas.dotsandboxes.test"
+        testApplicationId = "com.devfigas.ninemensmorris.test"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "defaultAvatar", "\"🔴\"")
     }

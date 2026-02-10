@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Dots and Boxes</string>
+    <string name="app_name">Nine Men\'s Morris</string>
     <string name="your_turn">Your Turn</string>
     <string name="opponent_turn">Opponent\'s Turn</string>
     <string name="game_over">Game Over</string>
@@ -19,7 +19,7 @@
     <string name="score_format">%1$d - %2$d</string>
     <string name="send">Send</string>
     <string name="type_message">Type a message…</string>
-    <string name="wants_to_play">wants to play Dots and Boxes</string>
+    <string name="wants_to_play">wants to play Nine Men\'s Morris</string>
     <string name="assign_red">Red</string>
     <string name="assign_blue">Blue</string>
     <string name="opponent_resigned">Opponent resigned</string>
@@ -28,4 +28,14 @@
     <string name="waiting_rematch">Waiting for opponent\'s response…</string>
     <string name="opponent_declined_rematch">Opponent declined rematch</string>
     <string name="connection_lost">Connection lost</string>
+    <string name="place_a_piece">Place a Piece</string>
+    <string name="opponent_placing">Opponent Placing…</string>
+    <string name="move_a_piece">Move a Piece</string>
+    <string name="remove_opponent_piece">Remove Opponent\'s Piece</string>
+    <string name="opponent_removing">Opponent Removing…</string>
+    <string name="draw_by_repetition">Draw by repetition</string>
+    <string name="pieces_in_hand">In Hand: %1$d</string>
+    <string name="mill_formed">Mill!</string>
+    <string name="move_phase_started">Move your pieces!</string>
+    <string name="pieces_to_place">Pieces to place</string>
 </resources>
