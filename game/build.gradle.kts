@@ -59,7 +59,7 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            buildConfigField("String", "APPODEAL_APP_KEY", "\"0832ef7ad4954caf7f6d56efea3afc24bb91f2099a3bd989\"")
+            buildConfigField("String", "APPODEAL_APP_KEY", "\"a5414d415c66dee4882e7357f9dc23f25f18e5ecd9305c05\"")
         }
         release {
             isMinifyEnabled = true
@@ -69,7 +69,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "APPODEAL_APP_KEY", "\"c47b07851de35e01bdb59c59e3e55f2d8c6c6dca0a6c5079\"")
+            buildConfigField("String", "APPODEAL_APP_KEY", "\"8c8fdddbea3928620975b939093c13f1dc6f571f5ff9c5c8\"")
         }
     }
 
