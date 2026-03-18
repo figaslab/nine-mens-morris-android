@@ -23,25 +23,6 @@
           "other_platform_oauth_client": []
         }
       }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:148308286806:android:380959f216ab4d12b9caf7",
-        "android_client_info": {
-          "package_name": "com.devfigas.ninemensmorris.debug"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDz9BJl9iQxHHkgNqJg1wSOBee4Pz8KjrU"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
     }
   ],
   "configuration_version": "1"
