@@ -85,28 +85,17 @@ ONLINE MODE:
 
 ⚪⚫ NINE MEN'S MORRIS RULES
 
-Classic Nine Men's Morris rules on a board with three concentric squares:
+Classic rules on a board with three concentric squares:
+• PLACING: Players take turns placing their 9 pieces on empty intersections
+• MILLS: Form 3 in a row along a line to remove an opponent's piece
+• MOVING: After all pieces are placed, slide pieces to adjacent empty spots
+• FLYING: With only 3 pieces left, move to any empty intersection
+• You cannot remove a piece in a mill unless no other pieces are available
+• WIN: Reduce opponent to 2 pieces or block all their moves
 
-PHASE 1 — PLACING:
-• Each player has 9 pieces to place on the board
-• Players take turns placing one piece on any empty intersection
-• Forming a mill (3 pieces in a row along a line) allows you to remove one opponent's piece
+Whether you're new to this ancient strategy game or a seasoned player, enjoy the perfect Nine Men's Morris experience online and offline.
 
-PHASE 2 — MOVING:
-• Once all pieces are placed, players take turns sliding one piece to an adjacent empty intersection
-• Forming a new mill allows you to remove one opponent's piece
-• You cannot remove a piece that is part of an opponent's mill (unless no other pieces are available)
-
-PHASE 3 — FLYING:
-• When a player is reduced to only 3 pieces, that player may "fly" — move a piece to any empty intersection, not just adjacent ones
-
-WINNING:
-• A player wins by reducing the opponent to 2 pieces
-• A player also wins if the opponent cannot make a legal move
-
-Whether you're discovering this ancient strategy game for the first time or a seasoned player who knows every mill formation by heart, this app provides the perfect Nine Men's Morris experience both online and offline.
-
-Download now and challenge someone next to you to a Nine Men's Morris match! No internet? No problem!
+Download now and challenge someone nearby! No internet? No problem!
 
 ⚠️ DISCLAIMER
 This is a skill-based board game for entertainment purposes only. It is NOT a gambling app and does not involve real-money transactions, betting, or wagering of any kind. All in-game coins, rewards, and prizes are virtual items with no real-world monetary value and cannot be exchanged, transferred, or redeemed for real money or any goods and services outside the app. No purchase is required to play or enjoy the full game experience.
