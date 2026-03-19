@@ -1,0 +1,77 @@
+name: Nine Men's Morris
+brief: Jogo P2P de Nine Men's Morris - Jogue offline via Bluetooth/WiFi!
+description: ⚪⚫ Nine Men's Morris
+
+Jogue Moinho com pessoas próximas sem internet! Conecte-se via Bluetooth ou WiFi e desfrute deste antigo jogo de estratégia frente a frente. Coloque as suas peças, forme moinhos e remova as peças do adversário!
+
+🎯 PRINCIPAIS FUNCIONALIDADES
+
+📡 MULTIJOGADOR OFFLINE
+• Modo Bluetooth: Jogue com qualquer pessoa próxima, sem internet
+• Modo WiFi Local: Conecte-se na mesma rede WiFi para jogabilidade mais rápida
+• Modo Frente a Frente: Partilhe o dispositivo, perfeito para viagens ou salas de espera
+• Torneios Online: Compita globalmente quando tiver internet
+
+🎮 MODOS DE JOGO
+• Modo Treino: Aperfeiçoe as suas habilidades contra a IA
+• Multijogador Local: Passe o dispositivo entre jogadores
+• Partida Bluetooth: Jogo sem fios até 10 metros
+• Partida WiFi: Conexão estável na rede local
+• Modo Torneio: Ganhe prémios e desbloqueie avatares
+
+🏆 TORNEIOS E RECOMPENSAS
+• Múltiplos níveis de torneio com dificuldade crescente
+• Ganhe moedas ao vencer partidas
+• Desbloqueie avatares exclusivos com tema de peças
+• Progrida através de rankings e desafios
+• Recompensas diárias para jogadores ativos
+
+✨ FUNCIONALIDADES
+• Design de tabuleiro limpo e intuitivo com quadrados concêntricos clássicos
+• Avatares personalizáveis com temas de peças únicos
+• Sincronização de movimentos em tempo real
+• Sistema de desafio com aceitar/rejeitar
+• Chat durante as partidas
+• Destaque de formação de moinho
+• Indicadores de movimentos válidos
+• Validação de movimentos seguindo as regras oficiais do Moinho
+• Opção de revanche após cada jogo
+
+🎨 EXPERIÊNCIA DO UTILIZADOR
+• Interface bonita com tema pixel-art
+• Animações suaves e controlos responsivos
+• Sem anúncios durante o jogo (apenas anúncios recompensados para bónus)
+• App leve, consumo mínimo de bateria
+• Funciona em telemóveis e tablets
+
+🔒 PRIVACIDADE E SEGURANÇA
+• Conteúdo apropriado para todas as idades
+• Conformidade com COPPA para menores de 13 anos
+• Sem recolha de dados pessoais nos modos offline
+• Ambiente seguro e familiar
+
+📶 PORQUÊ MULTIJOGADOR OFFLINE?
+Ideal para viagens, áreas remotas, escola ou reuniões familiares. Sem necessidade de partilhar contactos - basta abrir a app e conectar via Bluetooth ou WiFi!
+
+🎲 COMO JOGAR
+• Bluetooth: Ativem o Bluetooth, criem/entrem num jogo pela lista próxima
+• WiFi: Conectem à mesma rede, criem/entrem pelo lobby WiFi
+• Online: Entre no lobby do torneio e desafie jogadores mundialmente
+
+
+⚪⚫ REGRAS DO MOINHO
+
+Regras clássicas num tabuleiro com três quadrados concêntricos:
+• COLOCAÇÃO: Os jogadores alternam a colocar as suas 9 peças em interseções vazias
+• MOINHOS: Forme 3 em linha ao longo de uma linha para remover uma peça do adversário
+• MOVIMENTO: Após todas as peças serem colocadas, deslize peças para posições adjacentes vazias
+• VOO: Com apenas 3 peças restantes, mova para qualquer interseção vazia
+• Não pode remover uma peça num moinho a menos que não haja outras peças disponíveis
+• VITÓRIA: Reduza o adversário a 2 peças ou bloqueie todos os seus movimentos
+
+Quer seja novo neste antigo jogo de estratégia ou um jogador experiente, desfrute da experiência de Moinho perfeita tanto online como offline.
+
+Descarregue agora e desafie alguém próximo! Sem internet? Sem problema!
+
+⚠️ AVISO LEGAL
+Este é um jogo de tabuleiro baseado em habilidade apenas para entretenimento. NÃO é uma app de apostas e não envolve transações com dinheiro real, apostas ou jogos de azar de qualquer tipo. Todas as moedas, recompensas e prémios do jogo são itens virtuais sem valor monetário real e não podem ser trocados, transferidos ou resgatados por dinheiro real ou quaisquer bens e serviços fora da app. Nenhuma compra é necessária para jogar ou desfrutar da experiência completa do jogo.
