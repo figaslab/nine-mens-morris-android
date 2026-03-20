@@ -102,6 +102,36 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Check ad mediation dependencies
+        id: ad_check
+        run: |
+          echo "Checking ad mediation dependency resolution..."
+          EXCLUDE=""
+          # Try resolving dependencies and capture failures
+          if ! ./gradlew :game:dependencies --configuration releaseRuntimeClasspath 2>&1 | tee /tmp/dep_output.txt | tail -5; then
+            # Extract failed dependency groups (only ad mediation repos, not core deps)
+            FAILED_GROUPS=$(grep -oP "Could not find \K[^:]+" /tmp/dep_output.txt | sort -u || true)
+            for group in $FAILED_GROUPS; do
+              # Only exclude ad-related groups (not google, firebase, androidx, etc.)
+              case "$group" in
+                com.google.*|com.firebase.*|androidx.*|org.jetbrains.*|com.appodeal.ads)
+                  echo "::error::Core dependency unavailable: $group - cannot exclude"
+                  exit 1
+                  ;;
+                *)
+                  echo "::warning::Ad mediation dependency unavailable: $group"
+                  EXCLUDE="${EXCLUDE:+$EXCLUDE,}$group"
+                  ;;
+              esac
+            done
+          fi
+          echo "EXCLUDE_AD_GROUPS=$EXCLUDE" >> $GITHUB_ENV
+          if [ -n "$EXCLUDE" ]; then
+            echo "::warning::Will exclude unavailable ad groups: $EXCLUDE"
+          else
+            echo "All ad mediation dependencies resolved OK"
+          fi
+
       - name: Build Release AAB
         env:
           KEYSTORE_FILE: ninemensmorris-upload-key.jks
@@ -110,9 +140,30 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           GRADLE_OPTS: -Xmx8g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError
         run: |
-          ./gradlew :game:bundleRelease --stacktrace --max-workers=1
+          EXTRA_ARGS=""
+          if [ -n "$EXCLUDE_AD_GROUPS" ]; then
+            EXTRA_ARGS="-PexcludeAdGroups=$EXCLUDE_AD_GROUPS"
+            echo "Building with excluded ad groups: $EXCLUDE_AD_GROUPS"
+          fi
+          ./gradlew :game:bundleRelease $EXTRA_ARGS --stacktrace --max-workers=1
           echo "Build completed! Checking outputs..."
           ls -lh game/build/outputs/bundle/release/
+
+      - name: Ad mediation summary
+        if: always()
+        run: |
+          echo "## Ad Mediation Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$EXCLUDE_AD_GROUPS" ]; then
+            echo "### Excluded (repository unavailable)" >> $GITHUB_STEP_SUMMARY
+            IFS=',' read -ra GROUPS <<< "$EXCLUDE_AD_GROUPS"
+            for g in "${GROUPS[@]}"; do
+              echo "- \`$g\`" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "_These ad networks were automatically excluded because their Maven repository was unreachable._" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "All ad mediation dependencies resolved successfully." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Verify AAB signature
         run: |
