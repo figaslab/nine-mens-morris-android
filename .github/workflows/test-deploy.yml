@@ -1,0 +1,32 @@
+name: Test Deploy (TEMPORARY)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-deploy:
+    name: Test Play Console Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download latest AAB artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: build-signed-aab.yml
+          name: ninemensmorris-release-v1.0.1
+          path: ./release
+
+      - name: Verify AAB exists
+        run: ls -lh ./release/
+
+      - name: Upload to Play Console (Internal Testing)
+        uses: r0adkll/upload-google-play@v1.1.3
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.devfigas.ninemensmorris
+          releaseFiles: ./release/game-release.aab
+          track: internal
+          status: completed
+          changesNotSentForReview: true
+
+      - name: Success
+        run: echo "Deploy successful!"
