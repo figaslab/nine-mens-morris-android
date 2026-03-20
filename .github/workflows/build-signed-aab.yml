@@ -102,36 +102,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Check ad mediation dependencies
-        id: ad_check
-        run: |
-          echo "Checking ad mediation dependency resolution..."
-          EXCLUDE=""
-          # Try resolving dependencies and capture failures
-          if ! ./gradlew :game:dependencies --configuration releaseRuntimeClasspath 2>&1 | tee /tmp/dep_output.txt | tail -5; then
-            # Extract failed dependency groups (only ad mediation repos, not core deps)
-            FAILED_GROUPS=$(grep -oP "Could not find \K[^:]+" /tmp/dep_output.txt | sort -u || true)
-            for group in $FAILED_GROUPS; do
-              # Only exclude ad-related groups (not google, firebase, androidx, etc.)
-              case "$group" in
-                com.google.*|com.firebase.*|androidx.*|org.jetbrains.*|com.appodeal.ads)
-                  echo "::error::Core dependency unavailable: $group - cannot exclude"
-                  exit 1
-                  ;;
-                *)
-                  echo "::warning::Ad mediation dependency unavailable: $group"
-                  EXCLUDE="${EXCLUDE:+$EXCLUDE,}$group"
-                  ;;
-              esac
-            done
-          fi
-          echo "EXCLUDE_AD_GROUPS=$EXCLUDE" >> $GITHUB_ENV
-          if [ -n "$EXCLUDE" ]; then
-            echo "::warning::Will exclude unavailable ad groups: $EXCLUDE"
-          else
-            echo "All ad mediation dependencies resolved OK"
-          fi
-
       - name: Build Release AAB
         env:
           KEYSTORE_FILE: ninemensmorris-upload-key.jks
@@ -140,14 +110,57 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           GRADLE_OPTS: -Xmx8g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError
         run: |
-          EXTRA_ARGS=""
-          if [ -n "$EXCLUDE_AD_GROUPS" ]; then
-            EXTRA_ARGS="-PexcludeAdGroups=$EXCLUDE_AD_GROUPS"
-            echo "Building with excluded ad groups: $EXCLUDE_AD_GROUPS"
-          fi
-          ./gradlew :game:bundleRelease $EXTRA_ARGS --stacktrace --max-workers=1
-          echo "Build completed! Checking outputs..."
-          ls -lh game/build/outputs/bundle/release/
+          EXCLUDE=""
+          MAX_RETRIES=3
+
+          for attempt in $(seq 1 $MAX_RETRIES); do
+            echo "=== Build attempt $attempt/$MAX_RETRIES ==="
+            EXTRA_ARGS=""
+            if [ -n "$EXCLUDE" ]; then
+              EXTRA_ARGS="-PexcludeAdGroups=$EXCLUDE"
+              echo "Excluding ad groups: $EXCLUDE"
+            fi
+
+            if ./gradlew :game:bundleRelease $EXTRA_ARGS --stacktrace --max-workers=1 2>&1 | tee /tmp/build_output.txt; then
+              echo "Build succeeded!"
+              echo "EXCLUDE_AD_GROUPS=$EXCLUDE" >> $GITHUB_ENV
+              ls -lh game/build/outputs/bundle/release/
+              exit 0
+            fi
+
+            # Parse failed dependencies - only "Could not find" errors
+            NEW_FAILURES=$(grep -oP "Could not find \K[^:]+" /tmp/build_output.txt | sort -u || true)
+            if [ -z "$NEW_FAILURES" ]; then
+              echo "::error::Build failed for non-dependency reason"
+              cat /tmp/build_output.txt | grep -A5 "FAILED\|error:" | tail -20
+              exit 1
+            fi
+
+            # Check if any failure is a core dependency (not excludable)
+            CORE_FAIL=0
+            for group in $NEW_FAILURES; do
+              case "$group" in
+                com.google.*|com.firebase.*|androidx.*|org.jetbrains.*|com.appodeal.ads)
+                  echo "::error::Core dependency unavailable: $group - cannot exclude"
+                  CORE_FAIL=1
+                  ;;
+                *)
+                  echo "::warning::Ad mediation repo unavailable: $group - will exclude and retry"
+                  EXCLUDE="${EXCLUDE:+$EXCLUDE,}$group"
+                  ;;
+              esac
+            done
+
+            if [ "$CORE_FAIL" -eq 1 ]; then
+              exit 1
+            fi
+
+            echo "Cleaning build cache before retry..."
+            ./gradlew clean 2>/dev/null || true
+          done
+
+          echo "::error::Build failed after $MAX_RETRIES attempts"
+          exit 1
 
       - name: Ad mediation summary
         if: always()
