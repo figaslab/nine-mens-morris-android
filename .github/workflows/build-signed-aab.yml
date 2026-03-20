@@ -121,7 +121,12 @@ jobs:
               echo "Excluding ad groups: $EXCLUDE"
             fi
 
-            if ./gradlew :game:bundleRelease $EXTRA_ARGS --stacktrace --max-workers=1 2>&1 | tee /tmp/build_output.txt; then
+            set +e
+            ./gradlew :game:bundleRelease $EXTRA_ARGS --stacktrace --max-workers=1 2>&1 | tee /tmp/build_output.txt
+            BUILD_EXIT=${PIPESTATUS[0]}
+            set -e
+
+            if [ "$BUILD_EXIT" -eq 0 ]; then
               echo "Build succeeded!"
               echo "EXCLUDE_AD_GROUPS=$EXCLUDE" >> $GITHUB_ENV
               ls -lh game/build/outputs/bundle/release/
