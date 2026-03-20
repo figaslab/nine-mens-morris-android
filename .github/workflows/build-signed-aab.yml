@@ -228,15 +228,36 @@ jobs:
           name: ninemensmorris-release-v${{ github.event.inputs.version_name }}
           path: ./release
 
+      - name: Decode service account JSON
+        run: |
+          cat <<'SACEOF' > service-account.json
+          ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          SACEOF
+          # Trim leading whitespace from heredoc indentation
+          sed -i 's/^          //' service-account.json
+          # Validate JSON
+          if python3 -c "import json; json.load(open('service-account.json'))" 2>/dev/null; then
+            echo "Service account JSON is valid"
+          else
+            echo "::error::Service account JSON is invalid. Please re-set the PLAY_STORE_SERVICE_ACCOUNT_JSON secret."
+            echo "First 100 chars (masked):"
+            head -c 100 service-account.json | sed 's/./*/g'
+            exit 1
+          fi
+
       - name: Upload to Play Console (Internal Testing)
         uses: r0adkll/upload-google-play@v1.1.3
         with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          serviceAccountJson: service-account.json
           packageName: com.devfigas.ninemensmorris
           releaseFiles: ./release/game-release.aab
           track: internal
           status: completed
           changesNotSentForReview: true
+
+      - name: Cleanup service account
+        if: always()
+        run: rm -f service-account.json
 
       - name: Summary
         run: |
