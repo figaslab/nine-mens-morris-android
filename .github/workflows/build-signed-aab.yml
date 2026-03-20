@@ -171,14 +171,13 @@ jobs:
         if: always()
         run: |
           echo "## Ad Mediation Summary" >> $GITHUB_STEP_SUMMARY
-          if [ -n "$EXCLUDE_AD_GROUPS" ]; then
+          if [ -n "${EXCLUDE_AD_GROUPS:-}" ]; then
             echo "### Excluded (repository unavailable)" >> $GITHUB_STEP_SUMMARY
-            IFS=',' read -ra GROUPS <<< "$EXCLUDE_AD_GROUPS"
-            for g in "${GROUPS[@]}"; do
-              echo "- \`$g\`" >> $GITHUB_STEP_SUMMARY
+            echo "$EXCLUDE_AD_GROUPS" | tr ',' '\n' | while read -r g; do
+              echo "- $g" >> $GITHUB_STEP_SUMMARY
             done
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "_These ad networks were automatically excluded because their Maven repository was unreachable._" >> $GITHUB_STEP_SUMMARY
+            echo "These ad networks were automatically excluded because their Maven repository was unreachable." >> $GITHUB_STEP_SUMMARY
           else
             echo "All ad mediation dependencies resolved successfully." >> $GITHUB_STEP_SUMMARY
           fi
