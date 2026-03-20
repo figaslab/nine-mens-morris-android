@@ -27,7 +27,6 @@ jobs:
           releaseFiles: ./release/game-release.aab
           track: internal
           status: completed
-          changesNotSentForReview: true
 
       - name: Success
         run: echo "Deploy successful!"
