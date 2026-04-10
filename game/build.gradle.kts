@@ -16,8 +16,8 @@ android {
         applicationId = "com.devfigas.ninemensmorris"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 26032402
+        versionName = "1.1.0"
 
         testApplicationId = "com.devfigas.ninemensmorris.test"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
