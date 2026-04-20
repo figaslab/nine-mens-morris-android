@@ -16,7 +16,7 @@ android {
         applicationId = "com.devfigas.ninemensmorris"
         minSdk = 23
         targetSdk = 35
-        versionCode = 26032402
+        versionCode = 26042002
         versionName = "1.1.0"
 
         testApplicationId = "com.devfigas.ninemensmorris.test"

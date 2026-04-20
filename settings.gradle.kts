@@ -13,6 +13,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("file:///${rootProject.projectDir.parentFile}/appodeal-mirror/repository") }
         maven { url = uri("https://artifactory.appodeal.com/appodeal") }
         if (usePrebuiltLibs) {
             listOf("p2pkit-android", "gridgame-android", "uikit-android", "mockpvp-android").forEach { repo ->
