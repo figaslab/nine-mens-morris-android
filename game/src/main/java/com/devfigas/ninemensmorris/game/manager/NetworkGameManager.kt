@@ -41,8 +41,8 @@ class NetworkGameManager(
         private const val RETRY_DELAY_MS = 3000L
         private const val MAX_RETRIES = 3
         private const val CHALLENGE_TIMEOUT_MS = 30_000L
-        private const val TURN_TIMEOUT_MS = 30_000L
-        private const val OPPONENT_TIMEOUT_MS = 45_000L
+        private const val TURN_TIMEOUT_MS = 15_000L
+        private const val OPPONENT_TIMEOUT_MS = 20_000L
     }
 
     private var isChallenger: Boolean = false

@@ -58,6 +58,14 @@ data class NineMensMorrisGameState(
         return currentPlayerTimeRemainingMs() <= 0
     }
 
+    fun remainingTurnTime(): Long {
+        if (!timerActive) return turnTimeoutMs
+        val elapsed = System.currentTimeMillis() - turnStartTime
+        return maxOf(0, turnTimeoutMs - elapsed)
+    }
+
+    fun isTurnExpired(): Boolean = timerActive && remainingTurnTime() <= 0
+
     fun getRedScore(): Int = board.piecesOnBoard(PlayerColor.RED)
 
     fun getBlueScore(): Int = board.piecesOnBoard(PlayerColor.BLUE)
@@ -75,7 +83,7 @@ data class NineMensMorrisGameState(
     }
 
     companion object {
-        const val TURN_TIMEOUT_MS = 30_000L
+        const val TURN_TIMEOUT_MS = 15_000L
         const val DEFAULT_INITIAL_TIME_MS = 10 * 60 * 1000L
         const val DEFAULT_INCREMENT_MS = 0L
 
