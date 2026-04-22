@@ -39,4 +39,18 @@
     <string name="mill_formed">Mill!</string>
     <string name="move_phase_started">Move your pieces!</string>
     <string name="pieces_to_place">Pieces to place</string>
+
+    <!-- Tutorial -->
+    <string name="tutorial_skip">Skip</string>
+    <string name="tutorial_skip_tutorial">Skip tutorial</string>
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_play">Play!</string>
+    <string name="tutorial_opponent_name">Tutor</string>
+    <string name="tutorial_welcome">Welcome to Nine Men\'s Morris! I\'ll show you the placement phase and how to form a mill.</string>
+    <string name="tutorial_objective">Goal: form a mill — three of your pieces in a row along a marked line — to capture an opponent piece.</string>
+    <string name="tutorial_first_move">Place your first red piece on the highlighted corner.</string>
+    <string name="tutorial_second_move">Build toward a mill along the top row — tap the highlighted spot.</string>
+    <string name="tutorial_third_move">Blue blocked your top row. Pivot to the vertical-cross mill 1-4-7 — tap the highlighted spot.</string>
+    <string name="tutorial_winning_move">Complete the mill! Tap to form three in a row on the cross line.</string>
+    <string name="tutorial_congrats">Mill formed! Now you\'d capture an opponent piece. Play a full match to explore movement and flying phases.</string>
 </resources>

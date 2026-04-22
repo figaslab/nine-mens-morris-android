@@ -175,6 +175,26 @@ class NineMensMorrisBoardView @JvmOverloads constructor(
     }
     private val dragGhostPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLOR_DRAG_PIECE; style = Paint.Style.FILL }
 
+    /**
+     * Returns a rect in window coordinates for the given board position, or
+     * null if the layout is not ready. Used by the tutorial overlay to
+     * highlight a specific node.
+     */
+    fun getPositionRectInWindow(position: Int): android.graphics.RectF? {
+        if (cellSize == 0f || position !in 0 until NineMensMorrisBoard.POSITION_COUNT) return null
+        val radius = width * PIECE_RADIUS_RATIO * 1.6f
+        val cx = screenCoords[position][0]
+        val cy = screenCoords[position][1]
+        val loc = IntArray(2)
+        getLocationInWindow(loc)
+        return android.graphics.RectF(
+            loc[0] + cx - radius,
+            loc[1] + cy - radius,
+            loc[0] + cx + radius,
+            loc[1] + cy + radius
+        )
+    }
+
     fun setOnBoardActionListener(listener: (from: Int, to: Int) -> Unit) {
         onBoardAction = listener
     }
