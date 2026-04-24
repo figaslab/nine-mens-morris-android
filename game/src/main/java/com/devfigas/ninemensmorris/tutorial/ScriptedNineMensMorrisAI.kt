@@ -6,9 +6,13 @@ import com.devfigas.ninemensmorris.game.state.NineMensMorrisGameState
 
 class ScriptedNineMensMorrisAI(private val placements: List<Int>) : NineMensMorrisAI {
     override fun selectMove(state: NineMensMorrisGameState): NineMensMorrisMove? {
-        // Count AI placements already made to pick the next one.
-        val aiMoveIndex = state.moveHistory.count { it.player == state.currentTurn }
+        if (!state.board.isPlacingPhase()) return null
+        if (state.mustRemove) return null
+        val aiMoveIndex = state.moveHistory.count {
+            it.player == state.currentTurn && it.type == NineMensMorrisMove.MoveType.PLACE
+        }
         val target = placements.getOrNull(aiMoveIndex) ?: return null
+        if (!state.board.isEmpty(target)) return null
         return NineMensMorrisMove(
             player = state.currentTurn,
             type = NineMensMorrisMove.MoveType.PLACE,

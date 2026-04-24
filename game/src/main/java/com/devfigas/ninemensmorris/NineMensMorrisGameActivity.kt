@@ -160,7 +160,23 @@ class NineMensMorrisGameActivity : AppCompatActivity() {
                 (gameManager as? com.devfigas.ninemensmorris.game.manager.LocalGameManager)?.activateTimer()
                 startPerTurnTimerUI()
             }
+            if (tutorialMode) startTutorial()
         }
+    }
+
+    private fun startTutorial() {
+        val overlay = tutorialOverlay ?: return
+        val director = TutorialDirector(
+            activity = this,
+            overlay = overlay,
+            boardView = boardView,
+            myColor = myColor,
+            opponent = opponent,
+            onForceState = { state -> gameManager?.forceStateForTutorial(state) },
+            onFinished = { finish() }
+        )
+        tutorialDirector = director
+        director.start()
     }
 
     private fun parseIntentExtras() {
@@ -251,8 +267,11 @@ class NineMensMorrisGameActivity : AppCompatActivity() {
 
         boardView.setOnBoardActionListener { from, to ->
             if (tutorialMode) {
-                val allowed = tutorialDirector?.allowedPositions()
-                if (allowed != null && to !in allowed) return@setOnBoardActionListener
+                val director = tutorialDirector
+                val allowedTargets = director?.allowedPositions()
+                val allowedSources = director?.allowedSources()
+                if (allowedTargets != null && to !in allowedTargets) return@setOnBoardActionListener
+                if (allowedSources != null && from !in allowedSources) return@setOnBoardActionListener
             }
             handleBoardAction(from, to)
         }
