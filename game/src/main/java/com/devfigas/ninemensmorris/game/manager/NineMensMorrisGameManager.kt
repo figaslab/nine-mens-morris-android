@@ -192,6 +192,10 @@ abstract class NineMensMorrisGameManager(
         stateCallback(newState)
     }
 
+    fun forceStateForTutorial(newState: NineMensMorrisGameState) {
+        updateState(newState)
+    }
+
     protected fun notifyError(error: String) {
         errorCallback(error)
     }

@@ -2,13 +2,18 @@ package com.devfigas.ninemensmorris
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import com.devfigas.ninemensmorris.game.engine.PlayerColor
 import com.devfigas.ninemensmorris.game.manager.NetworkGameManager
+import com.devfigas.ninemensmorris.tutorial.TutorialPreferences
 import com.devfigas.gridgame.model.PlayerSide
 import com.devfigas.mockpvp.PvpGameFactory
+import com.devfigas.mockpvp.activity.GameModeActivity
+import com.devfigas.mockpvp.activity.MainActivity
 import com.devfigas.mockpvp.game.PvpLobbyGameState
 import com.devfigas.mockpvp.game.PvpNetworkGameManager
 import com.devfigas.mockpvp.model.GameMode
+import com.devfigas.mockpvp.model.User
 
 class NineMensMorrisGameFactory : PvpGameFactory {
     override fun getGameActivityClass(): Class<out Activity> = NineMensMorrisGameActivity::class.java
@@ -22,7 +27,7 @@ class NineMensMorrisGameFactory : PvpGameFactory {
     override fun getVersionName(): String = BuildConfig.VERSION_NAME
     override fun getDebugOpponentSideSetting(context: Context): String = "RANDOM"
     override fun getDebugInitialState(context: Context): String? = null
-    override fun setupDebugButton(activity: Activity) { }
+    override fun setupDebugButton(activity: Activity) { DebugFeatures.setupDebugButton(activity) }
     override fun getExtraMyColorKey(): String = NineMensMorrisGameActivity.EXTRA_MY_COLOR
     override fun getExtraOpponentKey(): String = NineMensMorrisGameActivity.EXTRA_OPPONENT
     override fun getExtraGameIdKey(): String = NineMensMorrisGameActivity.EXTRA_GAME_ID
@@ -34,4 +39,15 @@ class NineMensMorrisGameFactory : PvpGameFactory {
     }
     override fun getDebugAutoResponse(): String = "ACCEPT"
     override fun getDebugRematchAutoResponse(): String = "ACCEPT"
+
+    override fun getTutorialIntent(context: Context, user: User): Intent {
+        return Intent(context, NineMensMorrisGameActivity::class.java).apply {
+            putExtra(MainActivity.EXTRA_USER, user)
+            putExtra(GameModeActivity.EXTRA_GAME_MODE, GameMode.CPU.name)
+            putExtra(NineMensMorrisGameActivity.EXTRA_TUTORIAL_MODE, true)
+        }
+    }
+
+    override fun isTutorialCompleted(context: Context): Boolean =
+        TutorialPreferences.isCompleted(context)
 }
