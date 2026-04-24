@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tutorial -->
+    <string name="tutorial_skip">Pular</string>
+    <string name="tutorial_skip_tutorial">Pular tutorial</string>
+    <string name="tutorial_next">Proximo</string>
+    <string name="tutorial_play">Jogar!</string>
+    <string name="tutorial_opponent_name">Tutor</string>
+    <string name="tutorial_welcome">Bem-vindo ao Nine Men\'s Morris! Vou te mostrar a fase de colocacao e como formar um moinho.</string>
+    <string name="tutorial_objective">Objetivo: formar um moinho — tres pecas suas em linha num segmento marcado — para capturar uma peca do oponente.</string>
+    <string name="tutorial_first_move">Coloque sua primeira peca vermelha no canto destacado.</string>
+    <string name="tutorial_second_move">Construa um moinho na linha de cima — toque no ponto destacado.</string>
+    <string name="tutorial_third_move">Azul bloqueou sua linha de cima. Mude para o moinho da cruz 1-4-7 — toque no ponto destacado.</string>
+    <string name="tutorial_winning_move">Complete o moinho! Toque para formar tres em linha na cruz.</string>
+    <string name="tutorial_congrats">Moinho formado! Agora voce capturaria uma peca do oponente. Jogue uma partida completa para ver as fases de movimento e voo.</string>
+</resources>

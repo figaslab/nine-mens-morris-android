@@ -39,4 +39,22 @@
     <string name="mill_formed">Mill!</string>
     <string name="move_phase_started">Move your pieces!</string>
     <string name="pieces_to_place">Pieces to place</string>
+
+    <!-- Tutorial -->
+    <string name="tutorial_skip">Skip</string>
+    <string name="tutorial_skip_tutorial">Skip tutorial</string>
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_play">Play!</string>
+    <string name="tutorial_opponent_name">Tutor</string>
+    <string name="tutorial_welcome">Welcome! I\'ll teach you Nine Men\'s Morris in under a minute.</string>
+    <string name="tutorial_rules_intro">Goal: form a mill — 3 of your pieces in a row along a marked line. Each mill lets you capture an opponent piece.</string>
+    <string name="tutorial_place_first">Phase 1 — placement. Tap the highlighted spot to place your first red piece.</string>
+    <string name="tutorial_opp_places">Now watch — your opponent places a piece.</string>
+    <string name="tutorial_place_second">Your turn. Tap the highlighted spot — we\'re building along the top row.</string>
+    <string name="tutorial_place_mill">One more! Tap the highlighted spot to complete a mill across the top row — 3 in a row.</string>
+    <string name="tutorial_capture_first">Mill! Now capture: tap the highlighted opponent piece to remove it from the board.</string>
+    <string name="tutorial_move_phase_intro">Nice capture! After all pieces are placed, the game enters phase 2: you slide pieces to adjacent empty spots along the lines.</string>
+    <string name="tutorial_move_formation">Tap your highlighted red piece, then tap the empty spot just above it to slide it and re-form a mill along the middle row.</string>
+    <string name="tutorial_capture_second">Another mill! Capture again: tap the highlighted opponent piece.</string>
+    <string name="tutorial_congrats">You did it! Place, move, form mills, capture. Reduce your opponent to 2 pieces and you win. Good luck!</string>
 </resources>
