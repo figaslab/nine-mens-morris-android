@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.0] - 2026-04-24 (build 26042402)
+
+### Added
+- Interactive two-scene tutorial that actually teaches the game: welcome + rules intro, guided top-row mill formation with non-blocking AI, first capture, then a pre-built movement-phase state where the player slides a piece to re-form a mill and captures again. Previously the `TutorialDirector` was declared but never instantiated, so the overlay never showed.
+
+### Changed
+- Tutorial overlay now fades in and out between steps with a short pause so the player can register their last move before the next hint appears.
+- Added debug-only "View Tutorial" button to the debug menu for quicker tutorial testing.
+
 ## [1.2.2] - 2026-04-24 (build 26042401)
 
 ### Added
