@@ -114,7 +114,7 @@ class NineMensMorrisGameActivity : AppCompatActivity() {
     private var lastVibratedSecond: Int = -1
 
     private val usesPerTurnTimer: Boolean
-        get() = !tutorialMode && tournament == null && (gameMode == GameMode.CPU || gameMode == GameMode.INTERNET ||
+        get() = !tutorialMode && (gameMode == GameMode.CPU || gameMode == GameMode.INTERNET ||
                 gameMode == GameMode.BLUETOOTH || gameMode == GameMode.WIFI)
 
     // Tutorial state
